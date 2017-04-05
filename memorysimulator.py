@@ -18,9 +18,6 @@ class Program:
         self.start_loc = start_loc
         self.end_loc = start_loc + pages_needed - 1 # starting from 0, hence -1
 
-clockloc = 0 # where the clock is in it's cycle
-queue = queue.Queue()
-
 class Progpage:
     def __init__(self, prognum, relprogpage, location, usebit, tsr):
         self.prognum = prognum
@@ -29,6 +26,7 @@ class Progpage:
         self.usebit = usebit  #for clock alogorithm
         self.tsr = tsr #for remove last used
 
+#create program index files
 def create_page_tables(programlist, page_size):
     page_tables = []
     abs_page = 0
@@ -40,6 +38,7 @@ def create_page_tables(programlist, page_size):
 
     return page_tables
 
+#create and allocate main memory
 def create_mem(program_tables):
     mem_table = []
     page_file_size = AVAILABLE_FRAMES / page_size
@@ -54,6 +53,19 @@ def file_exists(filename):
     if not isfile(filename):
         raise argparse.ArgumentTypeError("{} does not exist".format(filename))
     return filename
+
+#First in first out algorithm
+def FiFo():
+    queue = queue.Queue()  #Queue for FiFo
+    return
+
+#Clock algorithm
+def Clock():
+    return
+
+#Last recently used algorithm
+def LRU():
+    return
 
 def main():
     parser = argparse.ArgumentParser(description = "Simulate a virtual memory management system with various page sizes, paging replacement algorithms, and demand/prepaging.")
@@ -85,17 +97,7 @@ def main():
     mem_table = create_mem(page_tables)
     print_mem_table(mem_table)
 
-def create_page_tables(programlist, page_size):
-    page_tables = []
-    abs_page_loc = 0
-
-    for prog_no, prog_size in enumerate(programlist):
-        pages_needed = ceil(prog_size / page_size)
-        page_tables.append(Program(prog_no, prog_size, pages_needed, abs_page_loc))
-        abs_page_loc += pages_needed
-
-    return page_tables
-
+#Print fuctions for testing
 def print_page_tables(page_tables, page_size):
     print("{}\t{}\t{}\t{}\t{}".format("no", "size", "page", "need", "loc"))
     for p in page_tables:
