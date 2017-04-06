@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import queue
 import argparse
 import math
 from os.path import isfile
@@ -8,7 +7,6 @@ from math import ceil
 
 AVAILABLE_FRAMES = 512
 page_file_size = 0
-
 
 class Program:
     def __init__(self, prog_no, prog_size, pages_needed, start_loc):
@@ -19,11 +17,10 @@ class Program:
         self.end_loc = start_loc + pages_needed - 1 # starting from 0, hence -1
 
 class Progpage:
-    def __init__(self, ind, prognum, relprogpage, location, usebit, clocks):
+    def __init__(self, ind, prognum, relprogpage, usebit, clocks):
         self.ind = ind
         self.prognum = prognum
         self.relprogpage = relprogpage
-        self.location = location
         self.usebit = usebit  #for clock alogorithm
         self.clocks = clocks #for remove last used
 
@@ -47,10 +44,10 @@ def create_mem(program_tables, timer):
     page_per_program = page_file_size // len(program_tables)
     for prognum in range(0, len(program_tables)):
         for y in range(0, int(page_per_program)):
-            mem_table.append(Progpage(i, prognum, y ,program_tables[prognum].start_loc + y, 1, timer))
+            mem_table.append(Progpage(i, prognum, y, 1, timer))
             i += 1
             timer += 1
-    return mem_table
+    return mem_table, timer
 
 # argparse "type" to determine if a file exists
 def file_exists(filename):
@@ -59,14 +56,22 @@ def file_exists(filename):
     return filename
 
 #First in first out algorithm
-def fifo(sim, mem_table):
-    fifo_queue = queue.Queue()  #Queue for FiFo
+def fifo(sim, mem_table, timer):
     for x in range(0, len(sim)):
+        timer += 1
         for y in range(0, len(mem_table)):
-            if sim[x][0] == mem_table[y].prognum and sim[x][1] == memtable[y].relprogpage:
+            if sim[x][0] == mem_table[y].prognum and sim[x][1] == mem_table[y].relprogpage:
                 continue
-            else:
-                pass     
+        old = 0
+        clocks = timer
+        for y in range(0, len(mem_table)):
+            if mem_table[y].clocks < clocks:
+                old = mem_table[y].ind
+                clocks = mem_table[y].clocks
+        mem_table[old].prognum = sim[x][0]
+        mem_table[old].relprogpage = sim[x][1]
+        mem_table[old].clocks = timer
+        print_mem_table(mem_table)
     return
 #Clock algorithm
 #def Clock():
@@ -77,7 +82,7 @@ def fifo(sim, mem_table):
 #    return
 
 def main():
-    timer = 0 # an upcounting variable used for remove last refrence
+    
 
     parser = argparse.ArgumentParser(description = "Simulate a virtual memory management system with various page sizes, paging replacement algorithms, and demand/prepaging.")
 
@@ -101,21 +106,22 @@ def main():
         programlist = [int(line.split()[1]) for line in f if line.strip()]
 
     sim = []
-
+    timer = 0
     with open(args.programtrace) as f:
         for line in f:
             if line.strip():
                 sim.append(line.split())
-
     
 
 	#test code for 
     page_tables = create_page_tables(programlist, args.page_size)
-    print_page_tables(page_tables, args.page_size)
+    #print_page_tables(page_tables, args.page_size)
     
 	#test code for the main memory table
-    mem_table = create_mem(page_tables, timer)
+    mem_table, timer = create_mem(page_tables, timer)
     print_mem_table(mem_table)
+
+    fifo(sim, mem_table, timer)
 
 #Print fuctions for testing
 def print_page_tables(page_tables, page_size):
@@ -124,9 +130,9 @@ def print_page_tables(page_tables, page_size):
         print("{}\t{}\t{}\t{}\t{} - {}".format(p.prog_no, p.prog_size, page_size, p.pages_needed, p.start_loc, p.end_loc))
 
 def print_mem_table(page_tables):
-    print("\t{}\t{}\t{}\t{}\t{}\t{}".format("index","program", "rel loc", "loc", "usebit", "clocks"))
+    print("\t{}\t{}\t{}\t{}\t{}".format("index","program", "rel loc", "usebit", "clocks"))
     for p in page_tables:
-        print("\t{}\t{}\t{}\t{}\t{}\t{}".format(p.ind, p.prognum, p.relprogpage, p.location, p.usebit, p.clocks))
+        print("\t{}\t{}\t{}\t{}\t{}".format(p.ind, p.prognum, p.relprogpage, p.usebit, p.clocks))
 
 if __name__ == "__main__":
     main()
