@@ -24,10 +24,10 @@ class Lookup:
         self.file_num = file_num
 
 class Memory:
-    def __init__(self, ind, prognum, relprogpage, usebit, clocks):
+    def __init__(self, ind, prognum, page_num, usebit, clocks):
         self.ind = ind
         self.prognum = prognum
-        self.relprogpage = relprogpage
+        self.page_num = page_num
         self.usebit = usebit  #for clock alogorithm
         self.clocks = clocks #for remove last used
 
@@ -65,9 +65,9 @@ def create_mem(program_tables, timer, page_file_size):
             timer += 1
             mem_table.append(Memory(i, prognum, y, 1, timer))
             i += 1
-    for y in range(int(page_per_program) * 10, int(page_file_size) - 1):
+    for y in range(int(page_per_program) * len(program_tables), int(page_file_size) - 1):
             timer += 1
-            mem_table.append(Memory(i, 11, 0, 1, 0))
+            mem_table.append(Memory(i, nil, 0, 1, 0))
             i += 1
     return mem_table, timer
 
@@ -77,15 +77,33 @@ def file_exists(filename):
         raise argparse.ArgumentTypeError("{} does not exist".format(filename))
     return filename
 
+#function to search the lookup table
+def look(prog_num, file_num, prog_tables):
+    page_num = 0
+    print(prog_num)
+    print(file_num)
+    for x in range(0, len(prog_tables)):
+        if prog_tables[x].prog_num == prog_num and prog_tables[x].file_num == file_num:
+            print(1)
+            page_num = prog_tables[x].page_num
+            break
+    print(page_num)
+    return page_num
+
 #First in first out algorithm
-def fifo(sim, mem_table, timer, page_tables, page_file_size):
+def fifo(sim, mem_table, timer, page_tables, page_file_size, prog_tables):
     fault = 0
-    for x in range(0, 15):
+    for x in range(0, 40):
         timer += 1
         in_mem = False
         z = 0
+        page_num = 0
+        prog_num = sim[x][0]
+        file_num = sim[x][1]
+        page_num = look(prog_num, file_num, prog_tables)
+        #print(page_num)
         for y in range(0, len(mem_table)):
-            if sim[x][0] == mem_table[y].prognum and sim[x][1] == mem_table[y].relprogpage:
+            if prog_num == mem_table[y].prognum and page_num == mem_table[y].page_num:
                 in_mem = True
                 break
         if not in_mem:
@@ -95,10 +113,11 @@ def fifo(sim, mem_table, timer, page_tables, page_file_size):
                 if mem_table[z].clocks < clocks:
                     old = mem_table[z].ind
                     clocks = mem_table[z].clocks
-            mem_table[old].prognum = sim[x][0]
-            mem_table[old].relprogpage = sim[x][1]
+            mem_table[old].prognum = prog_num
+            mem_table[old].page_num = page_num
             mem_table[old].clocks = timer
             fault += 1
+            #print(fault)
             if paging == 1:
                 overflow = False
                 if sim[x][1] + 1 > page_tables[sim[x][0]].prog_size:
@@ -120,7 +139,7 @@ def fifo(sim, mem_table, timer, page_tables, page_file_size):
                         mem_table[old].relprogpage = sim[x][1] + 1
                         mem_table[old].clocks = timer
 
-        print_mem_table(mem_table)
+        #print_mem_table(mem_table)
     return fault
 #Clock algorithm
 def clock(sim, mem_table, timer, page_tables):
@@ -275,18 +294,18 @@ def main():
 
 	#test code for page tables
     page_tables = create_page_tables(programlist, args.page_size)
-    print_page_tables(page_tables, args.page_size)
+    #print_page_tables(page_tables, args.page_size)
     
     #test code for prog tables
     prog_tables = create_prog_tables(page_tables)
-    print_prog_tables(prog_tables)
+    #print_prog_tables(prog_tables)
 
 	#test code for the main memory table
     mem_table, timer = create_mem(page_tables, timer, page_file_size)
-    print_mem_table(mem_table)
+    #print_mem_table(mem_table)
 
-    #fault = fifo(sim, mem_table, timer, page_tables, page_file_size)
-    #print(fault)
+    fault = fifo(sim, mem_table, timer, page_tables, page_file_size, prog_tables)
+    print(fault)
 
 #Print fuctions for testing
 def print_page_tables(page_tables, page_size):
@@ -300,9 +319,9 @@ def print_prog_tables(page_tables):
         print("\t{}\t{}\t{}".format(p.prog_num, p.page_num, p.file_num))
 
 def print_mem_table(page_tables):
-    print("\t{}\t{}\t{}\t{}\t{}".format("index","program", "rel loc", "usebit", "clocks"))
+    print("\t{}\t{}\t{}\t{}\t{}".format("index","program", "page", "usebit", "clocks"))
     for p in page_tables:
-        print("\t{}\t{}\t{}\t{}\t{}".format(p.ind, p.prognum, p.relprogpage, p.usebit, p.clocks))
+        print("\t{}\t{}\t{}\t{}\t{}".format(p.ind, p.prognum, p.page_num, p.usebit, p.clocks))
 
 if __name__ == "__main__":
     main()
