@@ -55,10 +55,11 @@ def file_exists(filename):
     return filename
 
 #First in first out algorithm
-def fifo(sim, mem_table, timer):
+def fifo(sim, mem_table, timer, page_tables):
     for x in range(0, len(sim)):
         timer += 1
         in_mem = False
+        z = 0
         for y in range(0, len(mem_table)):
             if sim[x][0] == mem_table[y].prognum and sim[x][1] == mem_table[y].relprogpage:
                 in_mem = True
@@ -66,13 +67,34 @@ def fifo(sim, mem_table, timer):
         if not in_mem:
             old = 0 #index of page with lowest time
             clocks = timer
-            for y in range(0, len(mem_table)):
-                if mem_table[y].clocks < clocks:
-                    old = mem_table[y].ind
-                    clocks = mem_table[y].clocks
+            for z in range(0, len(mem_table)):
+                if mem_table[z].clocks < clocks:
+                    old = mem_table[z].ind
+                    clocks = mem_table[z].clocks
             mem_table[old].prognum = sim[x][0]
             mem_table[old].relprogpage = sim[x][1]
             mem_table[old].clocks = timer
+            if paging == 1:
+                overflow = False
+                if sim[x][1] + 1 > page_tables[sim[x][0]].prog_size:
+                    overflow = True
+                if not overflow:
+                    timer += 1
+                    for y in range(0, len(mem_table)):
+                        if sim[x][0] == mem_table[y].prognum and sim[x][1] + 1 == mem_table[y].relprogpage:
+                            in_mem = True
+                            break
+                    if not in_mem:
+                        old = 0 #index of page with lowest time
+                        clocks = timer
+                        for z in range(0, len(mem_table)):
+                            if mem_table[z].clocks < clocks:
+                                old = mem_table[z].ind
+                                clocks = mem_table[z].clocks
+                        mem_table[old].prognum = sim[x][0]
+                        mem_table[old].relprogpage = sim[x][1] + 1
+                        mem_table[old].clocks = timer
+
         print_mem_table(mem_table)
     return
 #Clock algorithm
@@ -163,7 +185,7 @@ def main():
     with open(args.programtrace) as f:
         for line in f:
             if line.strip() and len(sim) < 10:
-                sim.append(line.split())
+                sim.append([int(i) for i in line.split()])
     
 
 	#test code for 
@@ -174,7 +196,8 @@ def main():
     mem_table, timer = create_mem(page_tables, timer)
     print_mem_table(mem_table)
 
-    clock(sim, mem_table, timer)
+    paging = 1
+    fifo(sim, mem_table, timer, page_tables)
 
 #Print fuctions for testing
 def print_page_tables(page_tables, page_size):
