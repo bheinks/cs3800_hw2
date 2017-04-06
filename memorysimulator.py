@@ -4,6 +4,8 @@ import argparse
 from os.path import isfile
 from math import ceil
 
+
+
 AVAILABLE_FRAMES = 512
 page_file_size = 0
 
@@ -15,7 +17,13 @@ class Program:
         self.start_loc = start_loc
         self.end_loc = start_loc + pages_needed - 1 # starting from 0, hence -1
 
-class Progpage:
+class Lookup:
+    def __init__(self, prog_num, page_num, file_num):
+        self.prog_num = prog_num
+        self.page_num = page_num
+        self.file_num = file_num
+
+class Memory:
     def __init__(self, ind, prognum, relprogpage, usebit, clocks):
         self.ind = ind
         self.prognum = prognum
@@ -35,20 +43,31 @@ def create_page_tables(programlist, page_size):
 
     return page_tables
 
+#create program tables
+def create_prog_tables(page_tables):
+    prog_tables = []
+    for x in range(0, len(page_tables)):
+        i = 0
+        for y in range(0, page_tables[x].pages_needed):
+            
+            for z in range(0, int(page_size)):
+                prog_tables.append(Lookup(x, y, i))
+                i += 1
+    return prog_tables
+
 #create and allocate main memory
-def create_mem(program_tables, timer):
+def create_mem(program_tables, timer, page_file_size):
     i = 0
     mem_table = []
-    page_file_size = AVAILABLE_FRAMES / page_size
     page_per_program = page_file_size // len(program_tables)
     for prognum in range(0, len(program_tables)):
         for y in range(0, int(page_per_program)):
             timer += 1
-            mem_table.append(Progpage(i, prognum, y, 1, timer))
+            mem_table.append(Memory(i, prognum, y, 1, timer))
             i += 1
     for y in range(int(page_per_program) * 10, int(page_file_size) - 1):
             timer += 1
-            mem_table.append(Progpage(i, 11, 0, 1, 0))
+            mem_table.append(Memory(i, 11, 0, 1, 0))
             i += 1
     return mem_table, timer
 
@@ -59,9 +78,9 @@ def file_exists(filename):
     return filename
 
 #First in first out algorithm
-def fifo(sim, mem_table, timer, page_tables):
+def fifo(sim, mem_table, timer, page_tables, page_file_size):
     fault = 0
-    for x in range(0, len(sim)):
+    for x in range(0, 15):
         timer += 1
         in_mem = False
         z = 0
@@ -101,7 +120,7 @@ def fifo(sim, mem_table, timer, page_tables):
                         mem_table[old].relprogpage = sim[x][1] + 1
                         mem_table[old].clocks = timer
 
-        #print_mem_table(mem_table)
+        print_mem_table(mem_table)
     return fault
 #Clock algorithm
 def clock(sim, mem_table, timer, page_tables):
@@ -252,23 +271,33 @@ def main():
             if line.strip():# and len(sim) < 10:
                 sim.append(line.split())
     
+    page_file_size = AVAILABLE_FRAMES / page_size
 
-	#test code for 
+	#test code for page tables
     page_tables = create_page_tables(programlist, args.page_size)
     print_page_tables(page_tables, args.page_size)
     
+    #test code for prog tables
+    prog_tables = create_prog_tables(page_tables)
+    print_prog_tables(prog_tables)
+
 	#test code for the main memory table
-    mem_table, timer = create_mem(page_tables, timer)
+    mem_table, timer = create_mem(page_tables, timer, page_file_size)
     print_mem_table(mem_table)
 
-    fault = fifo(sim, mem_table, timer, page_tables)
-    print(fault)
+    #fault = fifo(sim, mem_table, timer, page_tables, page_file_size)
+    #print(fault)
 
 #Print fuctions for testing
 def print_page_tables(page_tables, page_size):
     print("{}\t{}\t{}\t{}\t{}".format( "no", "size", "page", "need", "loc"))
     for p in page_tables:
         print("{}\t{}\t{}\t{}\t{} - {}".format(p.prog_no, p.prog_size, page_size, p.pages_needed, p.start_loc, p.end_loc))
+
+def print_prog_tables(page_tables):
+    print("\t{}\t{}\t{}".format("program","page", "file"))
+    for p in page_tables:
+        print("\t{}\t{}\t{}".format(p.prog_num, p.page_num, p.file_num))
 
 def print_mem_table(page_tables):
     print("\t{}\t{}\t{}\t{}\t{}".format("index","program", "rel loc", "usebit", "clocks"))
