@@ -213,37 +213,48 @@ def clock(sim, mem_table, timer, page_tables):
     return fault
 
 #Last recently used algorithm
-def lru(sim, mem_table, timer, page_tables):
+def lru(sim, mem_table, timer, page_tables, page_file_size, prog_tables):
+    prog_table = prog_tables
     fault = 0
     for x in range(0, len(sim)):
         timer += 1
         in_mem = False
+        z = 0
+        page_num = 0
+        prog_num = int(sim[x][0])
+        file_num = int(sim[x][1])
+        page_num = look(prog_num, file_num, prog_table)
         for y in range(0, len(mem_table)):
-            if sim[x][0] == mem_table[y].prognum and sim[x][1] == mem_table[y].relprogpage:
-                mem_table[y].clocks = timer
+            in_mem = False
+            if prog_num == mem_table[y].prognum and page_num == mem_table[y].page_num:
                 in_mem = True
+                mem_table[y].clocks = timer
                 break
         if not in_mem:
             old = 0 #index of page with lowest time
             clocks = timer
-            for y in range(0, len(mem_table)):
-                if mem_table[y].clocks < clocks:
-                    old = mem_table[y].ind
-                    clocks = mem_table[y].clocks
-            mem_table[old].prognum = sim[x][0]
-            mem_table[old].relprogpage = sim[x][1]
+            for z in range(0, len(mem_table)):
+                if mem_table[z].clocks < clocks:
+                    old = mem_table[z].ind
+                    clocks = mem_table[z].clocks
+            mem_table[old].prognum = prog_num
+            mem_table[old].page_num = page_num
             mem_table[old].clocks = timer
-            fault =+ 1
+            fault += 1
             if paging == 1:
                 overflow = False
-                if sim[x][1] + 1 > page_tables[sim[x][0]].prog_size:
+                if int(file_num) + 1 > page_tables[int(prog_num)].prog_size:
+                    print(1)
                     overflow = True
                 if not overflow:
                     timer += 1
+                    file_num += 1
+                    page_num = look(prog_num, file_num, prog_table)
                     for y in range(0, len(mem_table)):
-                        if sim[x][0] == mem_table[y].prognum and sim[x][1] + 1 == mem_table[y].relprogpage:
-                            mem_table[y].clocks = timer
+                        in_mem = False
+                        if prog_num == mem_table[y].prognum and page_num == mem_table[y].page_num:
                             in_mem = True
+                            mem_table[y].clocks = timer
                             break
                     if not in_mem:
                         old = 0 #index of page with lowest time
@@ -252,10 +263,11 @@ def lru(sim, mem_table, timer, page_tables):
                             if mem_table[z].clocks < clocks:
                                 old = mem_table[z].ind
                                 clocks = mem_table[z].clocks
-                        mem_table[old].prognum = sim[x][0]
-                        mem_table[old].relprogpage = sim[x][1] + 1
+                        mem_table[old].prognum = prog_num
+                        mem_table[old].page_num = page_num
                         mem_table[old].clocks = timer
-        print_mem_table(mem_table)
+
+        #print_mem_table(mem_table)
     return fault
 
 def main():
@@ -302,7 +314,7 @@ def main():
 	#test code for the main memory table
     mem_table, timer = create_mem(page_tables, timer, page_file_size)
     #print_mem_table(mem_table)
-    fault = fifo(sim, mem_table, timer, page_tables, page_file_size, prog_tables)
+    fault = lru(sim, mem_table, timer, page_tables, page_file_size, prog_tables)
     print(fault)
     
 #Print fuctions for testing
