@@ -46,6 +46,10 @@ def create_mem(program_tables, timer):
             timer += 1
             mem_table.append(Progpage(i, prognum, y, 1, timer))
             i += 1
+    for y in range(int(page_per_program) * 10, int(page_file_size) - 1):
+            timer += 1
+            mem_table.append(Progpage(i, 11, 0, 1, 0))
+            i += 1
     return mem_table, timer
 
 # argparse "type" to determine if a file exists
@@ -56,6 +60,7 @@ def file_exists(filename):
 
 #First in first out algorithm
 def fifo(sim, mem_table, timer, page_tables):
+    fault = 0
     for x in range(0, len(sim)):
         timer += 1
         in_mem = False
@@ -74,6 +79,7 @@ def fifo(sim, mem_table, timer, page_tables):
             mem_table[old].prognum = sim[x][0]
             mem_table[old].relprogpage = sim[x][1]
             mem_table[old].clocks = timer
+            fault += 1
             if paging == 1:
                 overflow = False
                 if sim[x][1] + 1 > page_tables[sim[x][0]].prog_size:
@@ -95,10 +101,11 @@ def fifo(sim, mem_table, timer, page_tables):
                         mem_table[old].relprogpage = sim[x][1] + 1
                         mem_table[old].clocks = timer
 
-        print_mem_table(mem_table)
-    return
+        #print_mem_table(mem_table)
+    return fault
 #Clock algorithm
 def clock(sim, mem_table, timer, page_tables):
+    fault = 0
     for x in range(0, len(sim)):
         timer += 1
         in_mem = False
@@ -130,6 +137,7 @@ def clock(sim, mem_table, timer, page_tables):
             mem_table[old].prognum = sim[x][0]
             mem_table[old].relprogpage = sim[x][1]
             mem_table[old].clocks = timer
+            fault += 1
             if paging == 1:
                 overflow = False
                 if sim[x][1] + 1 > page_tables[sim[x][0]].prog_size:
@@ -165,10 +173,11 @@ def clock(sim, mem_table, timer, page_tables):
                         mem_table[old].relprogpage = sim[x][1] + 1
                         mem_table[old].clocks = timer
         print_mem_table(mem_table)
-    return
+    return fault
 
 #Last recently used algorithm
 def lru(sim, mem_table, timer, page_tables):
+    fault = 0
     for x in range(0, len(sim)):
         timer += 1
         in_mem = False
@@ -187,6 +196,7 @@ def lru(sim, mem_table, timer, page_tables):
             mem_table[old].prognum = sim[x][0]
             mem_table[old].relprogpage = sim[x][1]
             mem_table[old].clocks = timer
+            fault =+ 1
             if paging == 1:
                 overflow = False
                 if sim[x][1] + 1 > page_tables[sim[x][0]].prog_size:
@@ -209,7 +219,7 @@ def lru(sim, mem_table, timer, page_tables):
                         mem_table[old].relprogpage = sim[x][1] + 1
                         mem_table[old].clocks = timer
         print_mem_table(mem_table)
-    return
+    return fault
 
 def main():
     
@@ -239,20 +249,20 @@ def main():
     timer = -1
     with open(args.programtrace) as f:
         for line in f:
-            if line.strip() and len(sim) < 10:
-                sim.append([int(i) for i in line.split()])
+            if line.strip():# and len(sim) < 10:
+                sim.append(line.split())
     
 
 	#test code for 
     page_tables = create_page_tables(programlist, args.page_size)
-    #print_page_tables(page_tables, args.page_size)
+    print_page_tables(page_tables, args.page_size)
     
 	#test code for the main memory table
     mem_table, timer = create_mem(page_tables, timer)
     print_mem_table(mem_table)
 
-    paging = 1
-    clock(sim, mem_table, timer, page_tables)
+    fault = fifo(sim, mem_table, timer, page_tables)
+    print(fault)
 
 #Print fuctions for testing
 def print_page_tables(page_tables, page_size):
