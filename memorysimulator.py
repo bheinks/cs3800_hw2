@@ -49,7 +49,6 @@ def create_prog_tables(page_tables):
     for x in range(0, len(page_tables)):
         i = 0
         for y in range(0, page_tables[x].pages_needed):
-            
             for z in range(0, int(page_size)):
                 prog_tables.append(Lookup(x, y, i))
                 i += 1
@@ -67,7 +66,7 @@ def create_mem(program_tables, timer, page_file_size):
             i += 1
     for y in range(int(page_per_program) * len(program_tables), int(page_file_size) - 1):
             timer += 1
-            mem_table.append(Memory(i, nil, 0, 1, 0))
+            mem_table.append(Memory(i, None, 0, 1, 0))
             i += 1
     return mem_table, timer
 
@@ -80,28 +79,26 @@ def file_exists(filename):
 #function to search the lookup table
 def look(prog_num, file_num, prog_tables):
     page_num = 0
-    print(prog_num)
-    print(file_num)
     for x in range(0, len(prog_tables)):
-        if prog_tables[x].prog_num == prog_num and prog_tables[x].file_num == file_num:
-            print(1)
+        if int(prog_tables[x].file_num) == int(file_num) and int(prog_tables[x].file_num) == int(file_num):
             page_num = prog_tables[x].page_num
             break
-    print(page_num)
+    #print(page_num)
     return page_num
 
 #First in first out algorithm
 def fifo(sim, mem_table, timer, page_tables, page_file_size, prog_tables):
+    prog_table = prog_tables
     fault = 0
-    for x in range(0, 40):
+    for x in range(0, len(sim)):
         timer += 1
         in_mem = False
         z = 0
         page_num = 0
         prog_num = sim[x][0]
         file_num = sim[x][1]
-        page_num = look(prog_num, file_num, prog_tables)
-        #print(page_num)
+        page_num = look(prog_num, file_num, prog_table)
+
         for y in range(0, len(mem_table)):
             if prog_num == mem_table[y].prognum and page_num == mem_table[y].page_num:
                 in_mem = True
@@ -117,15 +114,14 @@ def fifo(sim, mem_table, timer, page_tables, page_file_size, prog_tables):
             mem_table[old].page_num = page_num
             mem_table[old].clocks = timer
             fault += 1
-            #print(fault)
             if paging == 1:
                 overflow = False
-                if sim[x][1] + 1 > page_tables[sim[x][0]].prog_size:
+                if int(file_num) + 1 > page_tables[int(prog_num)].prog_size:
                     overflow = True
                 if not overflow:
                     timer += 1
                     for y in range(0, len(mem_table)):
-                        if sim[x][0] == mem_table[y].prognum and sim[x][1] + 1 == mem_table[y].relprogpage:
+                        if prog_num == mem_table[y].prognum and page_num == mem_table[y].page_num:
                             in_mem = True
                             break
                     if not in_mem:
@@ -135,8 +131,8 @@ def fifo(sim, mem_table, timer, page_tables, page_file_size, prog_tables):
                             if mem_table[z].clocks < clocks:
                                 old = mem_table[z].ind
                                 clocks = mem_table[z].clocks
-                        mem_table[old].prognum = sim[x][0]
-                        mem_table[old].relprogpage = sim[x][1] + 1
+                        mem_table[old].prognum = prog_num
+                        mem_table[old].page_num = page_num
                         mem_table[old].clocks = timer
 
         #print_mem_table(mem_table)
