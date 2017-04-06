@@ -43,9 +43,9 @@ def create_mem(program_tables, timer):
     page_per_program = page_file_size // len(program_tables)
     for prognum in range(0, len(program_tables)):
         for y in range(0, int(page_per_program)):
+            timer += 1
             mem_table.append(Progpage(i, prognum, y, 1, timer))
             i += 1
-            timer += 1
     return mem_table, timer
 
 # argparse "type" to determine if a file exists
@@ -58,13 +58,13 @@ def file_exists(filename):
 def fifo(sim, mem_table, timer):
     for x in range(0, len(sim)):
         timer += 1
+        in_mem = False
         for y in range(0, len(mem_table)):
-            in_mem = False
             if sim[x][0] == mem_table[y].prognum and sim[x][1] == mem_table[y].relprogpage:
                 in_mem = True
                 break
         if not in_mem:
-            old = 0
+            old = 0 #index of page with lowest time
             clocks = timer
             for y in range(0, len(mem_table)):
                 if mem_table[y].clocks < clocks:
@@ -80,8 +80,27 @@ def fifo(sim, mem_table, timer):
 #    return
 
 #Last recently used algorithm
-#def LRU():
-#    return
+def lru(sim, mem_table, timer):
+    for x in range(0, len(sim)):
+        timer += 1
+        in_mem = False
+        for y in range(0, len(mem_table)):
+            if sim[x][0] == mem_table[y].prognum and sim[x][1] == mem_table[y].relprogpage:
+                mem_table[y].clocks = timer
+                in_mem = True
+                break
+        if not in_mem:
+            old = 0 #index of page with lowest time
+            clocks = timer
+            for y in range(0, len(mem_table)):
+                if mem_table[y].clocks < clocks:
+                    old = mem_table[y].ind
+                    clocks = mem_table[y].clocks
+            mem_table[old].prognum = sim[x][0]
+            mem_table[old].relprogpage = sim[x][1]
+            mem_table[old].clocks = timer
+        print_mem_table(mem_table)
+    return
 
 def main():
     
@@ -108,10 +127,10 @@ def main():
         programlist = [int(line.split()[1]) for line in f if line.strip()]
 
     sim = []
-    timer = 0
+    timer = -1
     with open(args.programtrace) as f:
         for line in f:
-            if line.strip():
+            if line.strip() and len(sim) < 10:
                 sim.append(line.split())
     
 
@@ -123,7 +142,7 @@ def main():
     mem_table, timer = create_mem(page_tables, timer)
     print_mem_table(mem_table)
 
-    fifo(sim, mem_table, timer)
+    lru(sim, mem_table, timer)
 
 #Print fuctions for testing
 def print_page_tables(page_tables, page_size):
