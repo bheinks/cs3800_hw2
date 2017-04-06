@@ -95,11 +95,11 @@ def fifo(sim, mem_table, timer, page_tables, page_file_size, prog_tables):
         in_mem = False
         z = 0
         page_num = 0
-        prog_num = sim[x][0]
-        file_num = sim[x][1]
+        prog_num = int(sim[x][0])
+        file_num = int(sim[x][1])
         page_num = look(prog_num, file_num, prog_table)
-
         for y in range(0, len(mem_table)):
+            in_mem = False
             if prog_num == mem_table[y].prognum and page_num == mem_table[y].page_num:
                 in_mem = True
                 break
@@ -120,7 +120,10 @@ def fifo(sim, mem_table, timer, page_tables, page_file_size, prog_tables):
                     overflow = True
                 if not overflow:
                     timer += 1
+                    file_num += 1
+                    page_num = look(prog_num, file_num, prog_table)
                     for y in range(0, len(mem_table)):
+                        in_mem = False
                         if prog_num == mem_table[y].prognum and page_num == mem_table[y].page_num:
                             in_mem = True
                             break
@@ -299,10 +302,9 @@ def main():
 	#test code for the main memory table
     mem_table, timer = create_mem(page_tables, timer, page_file_size)
     #print_mem_table(mem_table)
-
     fault = fifo(sim, mem_table, timer, page_tables, page_file_size, prog_tables)
     print(fault)
-
+    
 #Print fuctions for testing
 def print_page_tables(page_tables, page_size):
     print("{}\t{}\t{}\t{}\t{}".format( "no", "size", "page", "need", "loc"))
