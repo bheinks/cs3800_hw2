@@ -76,8 +76,40 @@ def fifo(sim, mem_table, timer):
         print_mem_table(mem_table)
     return
 #Clock algorithm
-#def Clock():
-#    return
+def clock(sim, mem_table, timer):
+    for x in range(0, len(sim)):
+        timer += 1
+        in_mem = False
+        for y in range(0, len(mem_table)):
+            if sim[x][0] == mem_table[y].prognum and sim[x][1] == mem_table[y].relprogpage:
+                in_mem = True
+                mem_table[y].usebit = 1
+                break
+        if not in_mem:
+            old = 0 #index of page with lowest time
+            clocks = timer
+            found = False
+            for y in range(0, len(mem_table)):
+                if mem_table[y].clocks < clocks:
+                    old = mem_table[y].ind
+                    clocks = mem_table[y].clocks
+            for y in range(old, len(mem_table) - old):
+                if mem_table[y].usebit == 0:
+                    found = True
+                    break
+                else:
+                    mem_table[y].usebit = 0
+            if not found:
+                for y in range(0, old):
+                    if mem_table[y].usebit == 0:
+                        break
+                    else:
+                        mem_table[y].usebit = 0
+            mem_table[old].prognum = sim[x][0]
+            mem_table[old].relprogpage = sim[x][1]
+            mem_table[old].clocks = timer
+        print_mem_table(mem_table)
+    return
 
 #Last recently used algorithm
 def lru(sim, mem_table, timer):
@@ -142,7 +174,7 @@ def main():
     mem_table, timer = create_mem(page_tables, timer)
     print_mem_table(mem_table)
 
-    lru(sim, mem_table, timer)
+    clock(sim, mem_table, timer)
 
 #Print fuctions for testing
 def print_page_tables(page_tables, page_size):
