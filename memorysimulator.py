@@ -3,6 +3,7 @@
 import argparse
 from os.path import isfile
 from math import ceil
+import sys
 
 AVAILABLE_FRAMES = 512
 
@@ -18,7 +19,7 @@ class MemorySimulator:
         self.page_size = page_size
         self.algorithm = algorithm
         self.prepaging = bool(paging)
-        self.num_frames = ceil(AVAILABLE_FRAMES / page_size)
+        self.num_frames = int(AVAILABLE_FRAMES / page_size)
         self.programs = []
         self.page_faults = 0
         self.clock_pointer = 0
@@ -124,7 +125,7 @@ class MemorySimulator:
         # choose a page based on this algorithm again if prepaging
         # we flip this to False for a second call so we don't prepage forever
         if self.prepaging and prepage:
-            if word == program.num_pages + program.first_page:
+            if word == program.num_pages + program.first_page - 1:
                 word = program.first_page
             else:
                 word += 1
