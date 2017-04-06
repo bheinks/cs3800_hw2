@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import math
 from os.path import isfile
 from math import ceil
 
@@ -30,7 +29,7 @@ def create_page_tables(programlist, page_size):
     abs_page = 0
 
     for i, prog_size in enumerate(programlist):
-        pages_needed = (prog_size // page_size) + 1
+        pages_needed = ceil(prog_size / page_size)
         page_tables.append(Program(i, prog_size, pages_needed, abs_page))
         abs_page += pages_needed
 
@@ -60,17 +59,20 @@ def fifo(sim, mem_table, timer):
     for x in range(0, len(sim)):
         timer += 1
         for y in range(0, len(mem_table)):
+            in_mem = False
             if sim[x][0] == mem_table[y].prognum and sim[x][1] == mem_table[y].relprogpage:
-                continue
-        old = 0
-        clocks = timer
-        for y in range(0, len(mem_table)):
-            if mem_table[y].clocks < clocks:
-                old = mem_table[y].ind
-                clocks = mem_table[y].clocks
-        mem_table[old].prognum = sim[x][0]
-        mem_table[old].relprogpage = sim[x][1]
-        mem_table[old].clocks = timer
+                in_mem = True
+                break
+        if not in_mem:
+            old = 0
+            clocks = timer
+            for y in range(0, len(mem_table)):
+                if mem_table[y].clocks < clocks:
+                    old = mem_table[y].ind
+                    clocks = mem_table[y].clocks
+            mem_table[old].prognum = sim[x][0]
+            mem_table[old].relprogpage = sim[x][1]
+            mem_table[old].clocks = timer
         print_mem_table(mem_table)
     return
 #Clock algorithm
