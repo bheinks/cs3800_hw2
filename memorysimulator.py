@@ -18,7 +18,7 @@ class MemorySimulator:
         self.page_size = page_size
         self.algorithm = algorithm
         self.prepaging = bool(paging)
-        self.num_frames = int(AVAILABLE_FRAMES / page_size)
+        self.num_frames = ceil(AVAILABLE_FRAMES / page_size)
         self.programs = []
         self.page_faults = 0
         self.clock_pointer = 0
@@ -32,7 +32,7 @@ class MemorySimulator:
         page_count = 0
 
         for num, num_pages in enumerate(self.programlist):
-            num_pages = int(num_pages / self.page_size)
+            num_pages = ceil(num_pages / self.page_size)
             self.programs.append(Program(num, page_count, num_pages))
             page_count += num_pages
 
@@ -72,7 +72,8 @@ class MemorySimulator:
         word = int(word / self.page_size + program.first_page)
 
         if word > max(program.jump_table):
-            return
+            pass
+            #return
 
         if program.jump_table[word] == -1:
             self.page_faults += 1
