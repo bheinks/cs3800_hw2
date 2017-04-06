@@ -98,7 +98,7 @@ def fifo(sim, mem_table, timer, page_tables):
         print_mem_table(mem_table)
     return
 #Clock algorithm
-def clock(sim, mem_table, timer):
+def clock(sim, mem_table, timer, page_tables):
     for x in range(0, len(sim)):
         timer += 1
         in_mem = False
@@ -130,11 +130,45 @@ def clock(sim, mem_table, timer):
             mem_table[old].prognum = sim[x][0]
             mem_table[old].relprogpage = sim[x][1]
             mem_table[old].clocks = timer
+            if paging == 1:
+                overflow = False
+                if sim[x][1] + 1 > page_tables[sim[x][0]].prog_size:
+                    overflow = True
+                if not overflow:
+                    timer += 1
+                    for y in range(0, len(mem_table)):
+                        if sim[x][0] == mem_table[y].prognum and sim[x][1] + 1 == mem_table[y].relprogpage:
+                            in_mem = True
+                            mem_table[y].usebit = 1
+                            break
+                    if not in_mem:
+                        old = 0 #index of page with lowest time
+                        clocks = timer
+                        found = False
+                        for y in range(0, len(mem_table)):
+                            if mem_table[y].clocks < clocks:
+                                old = mem_table[y].ind
+                                clocks = mem_table[y].clocks
+                        for y in range(old, len(mem_table) - old):
+                            if mem_table[y].usebit == 0:
+                                found = True
+                                break
+                        else:
+                            mem_table[y].usebit = 0
+                        if not found:
+                            for y in range(0, old):
+                                if mem_table[y].usebit == 0:
+                                    break
+                                else:
+                                    mem_table[y].usebit = 0
+                        mem_table[old].prognum = sim[x][0]
+                        mem_table[old].relprogpage = sim[x][1] + 1
+                        mem_table[old].clocks = timer
         print_mem_table(mem_table)
     return
 
 #Last recently used algorithm
-def lru(sim, mem_table, timer):
+def lru(sim, mem_table, timer, page_tables):
     for x in range(0, len(sim)):
         timer += 1
         in_mem = False
@@ -153,6 +187,27 @@ def lru(sim, mem_table, timer):
             mem_table[old].prognum = sim[x][0]
             mem_table[old].relprogpage = sim[x][1]
             mem_table[old].clocks = timer
+            if paging == 1:
+                overflow = False
+                if sim[x][1] + 1 > page_tables[sim[x][0]].prog_size:
+                    overflow = True
+                if not overflow:
+                    timer += 1
+                    for y in range(0, len(mem_table)):
+                        if sim[x][0] == mem_table[y].prognum and sim[x][1] + 1 == mem_table[y].relprogpage:
+                            mem_table[y].clocks = timer
+                            in_mem = True
+                            break
+                    if not in_mem:
+                        old = 0 #index of page with lowest time
+                        clocks = timer
+                        for z in range(0, len(mem_table)):
+                            if mem_table[z].clocks < clocks:
+                                old = mem_table[z].ind
+                                clocks = mem_table[z].clocks
+                        mem_table[old].prognum = sim[x][0]
+                        mem_table[old].relprogpage = sim[x][1] + 1
+                        mem_table[old].clocks = timer
         print_mem_table(mem_table)
     return
 
@@ -197,7 +252,7 @@ def main():
     print_mem_table(mem_table)
 
     paging = 1
-    fifo(sim, mem_table, timer, page_tables)
+    clock(sim, mem_table, timer, page_tables)
 
 #Print fuctions for testing
 def print_page_tables(page_tables, page_size):
