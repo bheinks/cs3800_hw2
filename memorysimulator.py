@@ -5,8 +5,6 @@ from os.path import isfile
 from math import ceil
 
 AVAILABLE_FRAMES = 512
-page_file_size = 0
-timer = 0 # an upcounting variable used for remove last refrence
 
 class Program:
     def __init__(self, prog_no, prog_size, pages_needed, start_loc):
@@ -17,9 +15,9 @@ class Program:
         self.end_loc = start_loc + pages_needed - 1 # starting from 0, hence -1
 
 class Progpage:
-    def __init__(self, index, prognum, relprogpage, location, usebit, tsr):
+    def __init__(self, index, prog_no, relprogpage, location, usebit, tsr):
         self.index = index
-        self.prognum = prognum
+        self.prog_no = prog_no
         self.relprogpage = relprogpage
         self.location = location
         self.usebit = usebit # for clock alogorithm
@@ -31,7 +29,8 @@ def main(pl_filename, pt_filename, page_size, algorithm, paging):
         programlist = [int(line.split()[1]) for line in f if line.strip()]
 
     with open(pt_filename) as f:
-        programtrace = None
+        pass
+        #programtrace = [(int(i) for i in line.split()) for line in f if line.strip()]
 
     page_tables = create_page_tables(programlist, page_size)
     print_page_tables(page_tables, page_size)
@@ -41,6 +40,7 @@ def main(pl_filename, pt_filename, page_size, algorithm, paging):
     # test code for the main memory table
     mem_table = create_mem(page_tables, page_size)
     print_mem_table(mem_table)
+    #print(programtrace)
 
 #create program index files
 def create_page_tables(programlist, page_size):
@@ -48,7 +48,7 @@ def create_page_tables(programlist, page_size):
     abs_page = 0
 
     for i, prog_size in enumerate(programlist):
-        pages_needed = (prog_size // page_size) + 1
+        pages_needed = ceil(prog_size / page_size)
         page_tables.append(Program(i, prog_size, pages_needed, abs_page))
         abs_page += pages_needed
 
@@ -68,15 +68,15 @@ def create_mem(page_tables, page_size):
 
     return mem_table
 
-#First in first out algorithm
+# first in first out algorithm
 def fifo():
     return
 
-#Clock algorithm
+# clock algorithm
 def clock():
     return
 
-#Last recently used algorithm
+# last recently used algorithm
 def lru():
     return
 
@@ -88,7 +88,7 @@ def print_page_tables(page_tables, page_size):
 def print_mem_table(mem_table):
     print("{}\t{}\t{}\t{}\t{}".format("program", "rel loc", "loc", "usebit", "active clocks"))
     for p in mem_table:
-        print("{} {}\t{}\t{}\t{}".format(p.index, p.prognum, p.relprogpage, p.location, p.usebit, p.tsr))
+        print("{} {}\t{}\t{}\t{}".format(p.index, p.prog_no, p.relprogpage, p.location, p.usebit, p.tsr))
 
 # argparse "type" to determine if a file exists
 def file_exists(filename):
