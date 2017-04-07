@@ -1,10 +1,8 @@
-#!/usr/bin/bash
+#!/bin/sh
 
-algos=(lru clock fifo)
-
-for i in {0..1}
+for i in 0 1
 do
-    for algo in "${algos[@]}"
+    for algo in lru clock fifo
     do
         for page_size in 1 2 4 8 16
         do
