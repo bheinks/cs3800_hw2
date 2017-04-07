@@ -3,7 +3,6 @@
 import argparse
 from os.path import isfile
 from math import ceil
-import sys
 
 AVAILABLE_FRAMES = 512
 
