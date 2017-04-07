@@ -6,6 +6,7 @@ from math import ceil
 
 AVAILABLE_FRAMES = 512
 
+# delegates and handles all functions. execute with run()
 class MemorySimulator:
     def __init__(self, pl_filename, pt_filename, page_size, algorithm, paging):
         with open(pl_filename) as f:
@@ -13,6 +14,7 @@ class MemorySimulator:
             self.programlist = [int(line.split()[1]) for line in f if line.strip()]
 
         with open(pt_filename) as f:
+            # takes the format of [(prog1, word1), (prog2, word2), ...]
             self.programtrace = [tuple(int(i) for i in line.split()) for line in f if line.strip()]
 
         self.page_size = page_size
@@ -28,7 +30,9 @@ class MemorySimulator:
         self.read_programs()
         self.prepare_memory()
 
+    # generate program objects from programlist data and add to programlist
     def read_programs(self):
+        # absolute page location (determines start page of program)
         page_count = 0
 
         for num, num_pages in enumerate(self.programlist):
@@ -36,6 +40,7 @@ class MemorySimulator:
             self.programs.append(Program(num, page_count, num_pages))
             page_count += num_pages
 
+    # generate page objects and initialize memory
     def prepare_memory(self):
         self.memory = [Page(i) for i in range(self.num_frames)]
         pages_per_program = int(self.num_frames / len(self.programs))
@@ -53,7 +58,8 @@ class MemorySimulator:
                 virt_mem = program.first_page + j
 
                 self.memory[main_mem].update(virt_mem, self.pc, program)
-
+    
+    # loop over programtrace and simulate paging
     def run(self):
         print("=" * 24)
         print("Page size:", self.page_size)
@@ -67,23 +73,23 @@ class MemorySimulator:
         print("Total page faults:", self.page_faults)
         print("=" * 24)
 
+    # access memory and handle page faults if necessary
     def access(self, program, word):
         # convert relative to absolute page number
         word = int(word / self.page_size + program.first_page)
 
-        if word > max(program.jump_table):
-            pass
-            #return
-
+        # check if page is in memory
         if program.jump_table[word] == -1:
             self.page_faults += 1
             self.handle_fault(program, word)
         else:
             self.memory[program.jump_table[word]].access(self.pc)
 
+    # in the event of a page fault, load new page and update jump tables
     def handle_fault(self, program, word, prepage = True):
         sel = 0
 
+        # rotate through memory and remove infrequently used memory first
         if self.algorithm == "clock":
             while True:
                 if self.clock_pointer >= self.num_frames:
@@ -98,6 +104,7 @@ class MemorySimulator:
                 self.clock_pointer += 1
 
             self.clock_pointer += 1
+        # swap out the first page with the lowest timestamp
         elif self.algorithm == "lru":
             minimum = self.memory[sel].accessed
 
@@ -108,6 +115,7 @@ class MemorySimulator:
                 if self.memory[frame].accessed < minimum:
                     minimum = self.memory[frame].accessed
                     sel = frame
+        # choose the oldest loaded page and replace it
         elif self.algorithm == "fifo":
             minimum = self.memory[sel].loaded
             
@@ -135,6 +143,7 @@ class MemorySimulator:
 
             self.handle_fault(program, word, False)
 
+# represents an individual program
 class Program:
     def __init__(self, num, page_num, num_pages):
         self.num = num
@@ -142,6 +151,7 @@ class Program:
         self.num_pages = num_pages
         self.jump_table = dict.fromkeys(range(page_num, page_num + num_pages), -1)
 
+# represents an individual page
 class Page:
     def __init__(self, num = None):
         self.num = num
@@ -151,6 +161,7 @@ class Page:
         self.owner = None
         self.clock = False
 
+    # update page
     def update(self, word, pc, program):
         if self.owner:
             self.owner.jump_table[self.contents] = -1
@@ -164,6 +175,7 @@ class Page:
         self.accessed = pc
         self.loaded = pc
 
+    # access page
     def access(self, pc):
         self.accessed = pc
         self.clock = True
@@ -187,5 +199,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # create an instance of our simulator and run with the provided arguments
     mem_sim = MemorySimulator(args.programlist, args.programtrace, args.page_size, args.algorithm, args.paging)
     mem_sim.run()
